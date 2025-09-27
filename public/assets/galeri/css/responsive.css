@@ -1,0 +1,93 @@
+@media only screen and (min-width:0px) and (max-width:767px) {
+    .d2c_gallery_wrapper {
+        padding: 50px 0;
+    }
+
+    .d2c_gallery_wrapper .d2c_grid {
+        grid-template-columns: 1fr;
+        grid-row-gap: 12px;
+    }
+
+    .d2c_gallery_wrapper .d2c_btn {
+        font-size: 15px;
+        padding: 8px 50px 7px;
+        margin-top: 10%;
+    }
+
+    .d2c_gallery_wrapper .d2c_image_wrapper {
+        width: 100%;
+        /* height: 350px; */
+        height: 200px;
+        border-radius: var(--tertiary_radius);
+    }
+
+    .d2c_gallery_wrapper .d2c_image_wrapper img {
+        border-radius: var(--tertiary_radius);
+    }
+
+}
+
+@media only screen and (min-width:768px) and (max-width: 991px) {
+    .d2c_gallery_wrapper {
+        padding: 60px 0;
+    }
+
+    .d2c_gallery_wrapper .d2c_grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .d2c_gallery_wrapper .d2c_btn {
+        font-size: 17px;
+        padding: 6px 42px 5px;
+    }
+
+    .d2c_gallery_wrapper .d2c_image_wrapper {
+        /* height: 350px; */
+        height: 200px;
+        border-radius: var(--tertiary_radius);
+    }
+
+    .d2c_gallery_wrapper .d2c_image_wrapper img {
+        border-radius: var(--tertiary_radius);
+    }
+
+}
+
+@media only screen and (min-width:992px) and (max-width:1199px) {
+    .d2c_gallery_wrapper {
+        padding: 80px 0;
+    }
+
+    .d2c_gallery_wrapper .d2c_grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .d2c_gallery_wrapper .d2c_btn {
+        padding: 8px 50px 7px;
+        font-size: 18px;
+    }
+
+    .d2c_gallery_wrapper .d2c_image_wrapper {
+        border-radius: var(--tertiary_radius);
+    }
+
+    .d2c_gallery_wrapper .d2c_image_wrapper img {
+        border-radius: var(--tertiary_radius);
+    }
+
+    .d2c_gallery_wrapper .d2c_image_wrapper {
+        /* height: 300px; */
+        height: 200px;
+    }
+}
+
+
+
+/* 
+    Template Name: {{10 gallery section bootstrap Free}}
+    Template URL: {{https://designtocodes.com/product/10-responsive-bootstrap-gallery-section}}
+    Description: {{Don't miss out on the opportunity to level up your website with our 10 Responsive Bootstrap Gallery Section. Download now and watch your website come to life!}}
+    Author: DesignToCodes
+    Author URL: https://www.designtocodes.com/
+    Text Domain: {{ Gallery Section UI Kits }}  
+*/
