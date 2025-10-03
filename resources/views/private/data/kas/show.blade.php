@@ -77,23 +77,31 @@
                     <td class="text-center align-top">{{ $loop->iteration }}</td>
                     <td class="text-center align-top">
                         <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-primary" id="tombol-form-modal"
-                                data-url="{{ route('kasdata.edit', $kas->id_kas) }}" data-bs-toggle="tooltip"
-                                title="Edit Data">
-                                <i class="bx bx-edit-alt fs-5"></i>
-                            </button>
-                            <form method="POST" action="{{ route('kasdata.destroy', $kas->id_kas) }}"
-                                class="formDelete" style="display:inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" data-bs-toggle="tooltip">
-                                    <i class="bx bx-trash-alt fs-5"></i>
+                            @if (is_null($kas->id_pendaftaran) && is_null($kas->id_siswa))
+                                {{-- Tombol Edit --}}
+                                <button class="btn btn-sm btn-primary" id="tombol-form-modal"
+                                    data-url="{{ route('kasdata.edit', $kas->id_kas) }}" data-bs-toggle="tooltip"
+                                    title="Edit Data">
+                                    <i class="bx bx-edit-alt fs-5"></i>
                                 </button>
-                            </form>
+
+                                {{-- Tombol Hapus --}}
+                                <form method="POST" action="{{ route('kasdata.destroy', $kas->id_kas) }}"
+                                    class="formDelete" style="display:inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger" data-bs-toggle="tooltip"
+                                        title="Hapus Data">
+                                        <i class="bx bx-trash-alt fs-5"></i>
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     </td>
                     <td class="text-center align-top">
-                        {{ \Carbon\Carbon::parse($kas->tanggal)->translatedFormat('d F Y') }}
+
+                        {{ \Carbon\Carbon::parse($kas->tanggal)->locale('id')->translatedFormat('d F Y') }}
+
                     </td>
                     <td class="text-center align-top">
                         @if ($kas->kd_kas == 1)

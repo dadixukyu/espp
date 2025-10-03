@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class TagihanLainDetailModel extends Model
 {
     protected $table = 'b_tagihan_lain_detail';
+
     protected $primaryKey = 'id_detail';
 
     protected $fillable = [
@@ -15,6 +16,7 @@ class TagihanLainDetailModel extends Model
         'nominal_bayar',
         'metode_bayar',
         'keterangan',
+        'kode_transaksi',
     ];
 
     public function tagihan()

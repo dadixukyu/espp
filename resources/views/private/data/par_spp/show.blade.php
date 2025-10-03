@@ -1,19 +1,15 @@
 <style>
-    /* Supaya border tabel tidak pecah saat zoom */
-    .dataTables_wrapper .dataTables_scrollBody table {
-        border-collapse: collapse !important;
-    }
-
-    /* Hover row biar lebih elegan */
-    #tabel_spp tbody tr:hover {
-        background-color: #f3f6ff;
-        transition: background-color 0.2s ease-in-out;
+    .card:hover {
+        transform: translateY(-3px);
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
     }
 </style>
 
 <div class="table-responsive">
-    <table id="tabel_spp" class="table table-bordered table-hover align-middle nowrap shadow-sm rounded w-100">
-        <thead class="text-white fw-bold" style="background: linear-gradient(90deg, #0d6efd, #3B82F6);">
+    <table id="tabel_spp" class="table table-bordered table-hover align-middle nowrap shadow-sm rounded"
+        style="width:100%">
+        <thead class="text-white fw-bold" style="background: linear-gradient(90deg, #0d6efd, #198754);">
             <tr>
                 <th class="text-center"><i class="bx bx-hash fs-5"></i></th>
                 <th><i class="bx bx-calendar fs-5 me-1"></i> Tahun</th>
@@ -27,7 +23,7 @@
                 <tr>
                     <td class="text-center align-top">{{ $loop->iteration }}</td>
                     <td class="fw-semibold align-top">{{ $resultAll->tahun }}</td>
-                    <td class="align-top">Rp {{ number_format($resultAll->nominal, 2, ',', '.') }}</td>
+                    <td class="align-top text-center">Rp {{ number_format($resultAll->nominal, 2, ',', '.') }}</td>
                     <td class="align-top">{{ $resultAll->keterangan }}</td>
                     <td class="text-center align-top">
                         <div class="btn-group" role="group">

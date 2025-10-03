@@ -9,15 +9,18 @@ class ParTahunAjaranModel extends Model
 {
     use HasFactory;
 
-    protected $table = 'par_tahun_ajaran'; 
-    protected $primaryKey = 'id_tahun';      
+    protected $table = 'par_tahun_ajaran';
+
+    protected $primaryKey = 'id_tahun';
+
     public $timestamps = true;
 
     protected $fillable = [
+        'tahun',
         'tahun_awal',
         'tahun_akhir',
         'nama_ta',
-        'status'
+        'status',
     ];
 
     public function scopeAktif($query)

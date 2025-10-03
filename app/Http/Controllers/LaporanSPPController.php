@@ -12,31 +12,36 @@ class LaporanSPPController extends Controller
 {
     public function index(Request $request)
     {
+        // Ambil tahun login dari session
         $tahun = session('tahun_login') ?? date('Y');
         $idSiswa = $request->id_siswa;
 
-        $daftar_siswa = SiswaModel::getByTahun($tahun, $idSiswa);
+        // Ambil daftar siswa aktif (tetap muncul meski laporan difilter pertahun)
+        $daftar_siswa = SiswaModel::where('status_siswa', 'aktif')
+            ->when($idSiswa, fn ($q) => $q->where('id_siswa', $idSiswa))
+            ->get();
 
         return view('private.data.laporan.spp.view', [
             'title' => 'Laporan SPP',
             'daftar_siswa' => $daftar_siswa,
             'id_siswa' => $idSiswa,
-            'filter_mode' => $request->filter_mode ?? 'all',
-            'jenis_laporan' => $request->jenis_laporan ?? 'bulan',
+            'filter_mode' => $request->filter_mode ?? 'all',   // all / single
+            'jenis_laporan' => $request->jenis_laporan ?? 'bulan', // bulan / semester / tahun
+            'tahun' => $tahun,
         ]);
     }
 
     public function show(Request $request)
     {
-        $tahun = $request->tahun ?? date('Y');
-        $jenis = $request->jenis_laporan; // bulan / semester / tahun
+        $tahun = session('tahun_login') ?? date('Y');
+        $jenis = $request->jenis_laporan;
         $idSiswa = $request->id_siswa;
         $filterMode = $request->filter_mode;
 
         $query = TagihanSPPDetailModel::with('tagihan.siswa')
-            ->where('tahun', $tahun);
+            ->where('tahun', $tahun); // filter tahun login
 
-        // filter siswa tunggal
+        // filter per siswa
         if ($filterMode === 'single' && $idSiswa) {
             $query->whereHas('tagihan', fn ($q) => $q->where('id_siswa', $idSiswa));
         }
@@ -58,30 +63,24 @@ class LaporanSPPController extends Controller
 
     public function cetak_spp_pdf(Request $request)
     {
-        $tahun = $request->tahun ?? date('Y');
+        $tahun = session('tahun_login') ?? date('Y');
         $filter_mode = $request->filter_mode ?? 'all';   // all / single
         $id_siswa = $request->id_siswa;
-
         $mode_laporan = $request->mode_laporan ?? 'bulan'; // bulan / semester / tahun
-        $tipe = $request->tipe ?? 'periode';      // periode / siswa
+        $tipe = $request->tipe ?? 'periode';        // periode / siswa
 
-        // base query (detail)
         $query = TagihanSPPDetailModel::with('tagihan.siswa')
-            ->where('tahun', $tahun);
-
-        // filter per-siswa (single)
-        if ($filter_mode === 'single' && ! empty($id_siswa)) {
-            $query->whereHas('tagihan', function ($q) use ($id_siswa) {
-                $q->where('id_siswa', $id_siswa);
+            ->where('tahun', $tahun) // filter tahun login
+            ->whereHas('tagihan.siswa', function ($q) {
+                $q->where('status_siswa', 'aktif');
             });
+
+        // filter single siswa
+        if ($filter_mode === 'single' && ! empty($id_siswa)) {
+            $query->whereHas('tagihan', fn ($q) => $q->where('id_siswa', $id_siswa));
         }
 
-        // hanya siswa aktif
-        $query->whereHas('tagihan.siswa', function ($q) {
-            $q->where('status_siswa', 'aktif');
-        });
-
-        // filter bulan / semester sebelum grouping
+        // filter periode (bulan/semester)
         if ($mode_laporan === 'bulan' && $request->filled('bulan')) {
             $query->where('bulan', intval($request->bulan));
         } elseif ($mode_laporan === 'semester' && $request->filled('semester')) {
@@ -92,7 +91,7 @@ class LaporanSPPController extends Controller
         }
 
         // =========================
-        // MODE 1: LAPORAN PER PERIODE (rekap)
+        // MODE 1: LAPORAN PER PERIODE
         // =========================
         if ($tipe === 'periode') {
             if ($mode_laporan === 'bulan') {
@@ -136,7 +135,7 @@ class LaporanSPPController extends Controller
         }
 
         // =========================
-        // MODE 2: LAPORAN PER SISWA (breakdown)
+        // MODE 2: LAPORAN PER SISWA
         // =========================
         else {
             if ($mode_laporan === 'bulan') {
@@ -166,7 +165,6 @@ class LaporanSPPController extends Controller
                         return $row;
                     });
 
-                // filter bulan sesuai pilihan user
                 if ($request->filled('bulan')) {
                     $bulanFilter = intval($request->bulan);
                     $result = $result->filter(fn ($row) => $row->bulan == $bulanFilter);

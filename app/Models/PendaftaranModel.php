@@ -14,7 +14,7 @@ class PendaftaranModel extends Model
     protected $primaryKey = 'id_pendaftaran';
 
     protected $fillable = [
-        'tahun',
+
         'id_tahun',
         'tahun',
         'nisn',
@@ -33,7 +33,7 @@ class PendaftaranModel extends Model
         'kategori_biaya',
         'pengurangan_biaya',
         'biaya_lain',
-        'biaya_pendaftaran',
+        // 'biaya_pendaftaran',
         'no_hp',
         'email',
     ];
@@ -50,6 +50,11 @@ class PendaftaranModel extends Model
         // return $this->belongsTo(Parspp::class, 'kategori_biaya', 'id');
     }
 
+    public function biayaLain()
+    {
+        return $this->belongsTo(ParBiayaModel::class, 'biaya_lain', 'tahun');
+    }
+
     public function siswa()
     {
         return $this->hasOne(SiswaModel::class, 'nisn', 'nisn');
@@ -58,5 +63,11 @@ class PendaftaranModel extends Model
     public function tagihanLain()
     {
         return $this->hasMany(TagihanLainModel::class, 'id_pendaftaran', 'id_pendaftaran');
+    }
+
+    // di PendaftaranModel
+    public function kas()
+    {
+        return $this->hasMany(KasModel::class, 'id_pendaftaran', 'id_pendaftaran');
     }
 }

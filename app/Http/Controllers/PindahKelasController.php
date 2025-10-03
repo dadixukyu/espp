@@ -23,17 +23,15 @@ class PindahKelasController extends Controller
     public function show(Request $request)
     {
         $kelas = $request->kelas;
-        $tahun = session('tahun_login');
 
+        // Ambil semua siswa aktif sesuai kelas
         $siswa = SiswaModel::where('kelas', $kelas)
             ->where('status_siswa', 'aktif') // hanya siswa aktif
-            ->where('tahun_masuk', $tahun)
             ->get();
 
-        // rekap per kelas
+        // Rekap per kelas (hanya siswa aktif)
         $rekapPerKelas = SiswaModel::select('kelas')
             ->where('status_siswa', 'aktif')
-            ->where('tahun_masuk', $tahun)
             ->groupBy('kelas')
             ->selectRaw('kelas, count(*) as total')
             ->pluck('total', 'kelas')

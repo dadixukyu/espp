@@ -81,6 +81,7 @@
                     <td class="text-center align-top">{{ $loop->iteration }}</td>
                     <td class="text-center align-top">
                         <div class="btn-group" role="group">
+
                             {{-- Tombol Input Tagihan --}}
                             <button class="btn btn-sm btn-primary tombol-form-modal" id="tombol-form-modal"
                                 data-url="{{ route('tagihanlaindata.create', $item->id_pendaftaran) }}"
@@ -88,15 +89,69 @@
                                 <i class="bx bx-edit-alt fs-5"></i>
                             </button>
 
+                            {{-- Tombol Detail Tagihan --}}
                             <button class="btn btn-sm btn-info tombol-detail-tagihan" id="tombol-form-modal"
                                 data-url="{{ route('tagihanlaindata.show_detail', $item->id_pendaftaran) }}"
                                 data-bs-toggle="tooltip" title="Detail Tagihan SPP">
                                 <i class="bx bx-show fs-5"></i>
                             </button>
 
+                            {{-- Dropdown Cetak --}}
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-success dropdown-toggle"
+                                    data-bs-toggle="dropdown" aria-expanded="false" title="Cetak Kwitansi">
+                                    <i class="bx bx-printer fs-5"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg">
+
+                                    {{-- Cetak semua transaksi --}}
+                                    <li>
+                                        <a class="dropdown-item"
+                                            href="{{ route('tagihanlaindata.cetak_semua', $item->id_pendaftaran) }}"
+                                            target="_blank">
+                                            <i class="bx bx-receipt me-1 text-success"></i>
+                                            Cetak Semua Transaksi
+                                        </a>
+                                    </li>
+
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+
+                                    {{-- Cetak per transaksi (menggunakan kode_transaksi) --}}
+                                    @php
+                                        $transaksiList = [];
+                                        foreach ($item->tagihanLain as $tagihan) {
+                                            foreach ($tagihan->detail as $detail) {
+                                                if (
+                                                    $detail->kode_transaksi &&
+                                                    !isset($transaksiList[$detail->kode_transaksi])
+                                                ) {
+                                                    $transaksiList[$detail->kode_transaksi] = $detail;
+                                                }
+                                            }
+                                        }
+                                    @endphp
+
+                                    @foreach ($transaksiList as $kodeTransaksi => $detail)
+                                        <li>
+                                            <a class="dropdown-item"
+                                                href="{{ route('tagihanlaindata.cetak_transaksi', $kodeTransaksi) }}"
+                                                target="_blank">
+                                                <i class="bx bx-file me-1 text-primary"></i>
+                                                Cetak
+                                                {{ \Carbon\Carbon::parse($detail->tgl_bayar)->locale('id')->translatedFormat('d M Y') }}
+                                                - Rp {{ number_format($detail->nominal_bayar, 2, ',', '.') }}
+                                            </a>
+                                        </li>
+                                    @endforeach
+
+                                </ul>
+                            </div>
 
                         </div>
                     </td>
+
                     <td class="align-top">
                         @if ($item->status_siswa == 'Lunas')
                             <span class="badge bg-success"><i class="bx bx-check-circle fs-6"></i> Lunas</span>

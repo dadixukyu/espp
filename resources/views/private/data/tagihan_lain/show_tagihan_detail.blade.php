@@ -19,6 +19,31 @@
                         <i class="bx bx-info-circle"></i> Belum ada data tagihan untuk pendaftaran ini.
                     </div>
                 @else
+                    {{-- Ringkasan Total --}}
+                    <div class="alert alert-light border shadow-sm mb-3">
+                        <div class="row text-center fw-semibold">
+                            <div class="col-md-4 mb-2 mb-md-0">
+                                <i class="bx bx-money me-1 text-success"></i>
+                                Total Tagihan:
+                                <span class="text-dark">Rp {{ number_format($totalTagihan, 2, ',', '.') }}</span>
+                            </div>
+                            <div class="col-md-4 mb-2 mb-md-0">
+                                <i class="bx bx-wallet me-1 text-primary"></i>
+                                Total Bayar:
+                                <span class="text-dark">
+                                    Rp {{ number_format($totalBayar, 2, ',', '.') }}
+                                </span>
+                            </div>
+                            <div class="col-md-4">
+                                <i class="bx bx-error-circle me-1 text-danger"></i>
+                                Total Sisa:
+                                <span class="text-danger">Rp {{ number_format($totalSisa, 2, ',', '.') }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    {{-- Daftar Tagihan --}}
                     @foreach ($result as $item)
                         <div class="card mb-3 shadow-sm border-0">
                             <div
@@ -30,7 +55,7 @@
                                     <div class="small text-muted">
                                         <i class="bx bx-money me-1"></i> Tagihan:
                                         <span class="fw-semibold text-dark">
-                                            Rp {{ number_format($item->tagihan, 0, ',', '.') }}
+                                            Rp {{ number_format($item->biaya->nominal ?? 0, 2, ',', '.') }}
                                         </span>
                                     </div>
                                 </div>
@@ -38,14 +63,14 @@
                                     <div class="fw-semibold">
                                         Sisa:
                                         <span class="text-danger">
-                                            Rp {{ number_format($item->sisa_tagihan, 0, ',', '.') }}
+                                            Rp {{ number_format($item->sisa_tagihan, 2, ',', '.') }}
                                         </span>
                                     </div>
                                     <span
                                         class="badge px-3 py-2 rounded-pill 
-                                        @if (strtolower($item->status) == 'lunas') bg-success
-                                        @elseif(strtolower($item->status) == 'cicilan') bg-warning text-dark
-                                        @else bg-danger @endif">
+                            @if (strtolower($item->status) == 'lunas') bg-success
+                            @elseif(strtolower($item->status) == 'cicilan') bg-warning text-dark
+                            @else bg-danger @endif">
                                         {{ ucfirst($item->status) }}
                                     </span>
                                 </div>
@@ -73,9 +98,10 @@
                                                 <tr>
                                                     <td class="text-center">{{ $k + 1 }}</td>
                                                     <td class="text-center">
-                                                        {{ \Carbon\Carbon::parse($d->tgl_bayar)->format('d/m/Y') }}</td>
+                                                        {{ \Carbon\Carbon::parse($d->tgl_bayar)->format('d/m/Y') }}
+                                                    </td>
                                                     <td class="text-end fw-semibold">
-                                                        Rp {{ number_format($d->nominal_bayar, 0, ',', '.') }}
+                                                        Rp {{ number_format($d->nominal_bayar, 2, ',', '.') }}
                                                     </td>
                                                     <td class="text-center">
                                                         <span class="badge bg-secondary">{{ $d->metode_bayar }}</span>
@@ -109,6 +135,7 @@
                     @endforeach
                 @endif
             </div>
+
 
             {{-- Modal Footer --}}
             <div class="modal-footer">

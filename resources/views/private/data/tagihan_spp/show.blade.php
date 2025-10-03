@@ -50,6 +50,21 @@
             </div>
         </div>
     </div>
+    <!-- Card Tahun Login -->
+    <div class="col col-card">
+        <div class="card shadow-sm border-0 text-white" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+            <div class="card-body d-flex align-items-center justify-content-between p-2">
+                <div>
+                    <h6 class="card-title mb-1" style="font-size: 0.8rem;">Tahun Login</h6>
+                    <h5 class="card-text fw-bold mb-0" style="font-size: 1rem;">
+                        {{ session('tahun_login', date('Y')) }}
+                    </h5>
+                </div>
+                <div><i class="bx bx-calendar fs-3"></i></div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Siswa Kelas X -->
     <div class="col col-card">

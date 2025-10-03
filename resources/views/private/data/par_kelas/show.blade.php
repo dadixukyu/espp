@@ -1,13 +1,15 @@
 <style>
-    /* Supaya border tabel tidak pecah saat zoom */
-    .dataTables_wrapper .dataTables_scrollBody table {
-        border-collapse: collapse !important;
+    .card:hover {
+        transform: translateY(-3px);
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
     }
 </style>
 
 <div class="table-responsive">
-    <table id="tabel_kelas" class="table table-bordered table-hover align-middle nowrap shadow-sm rounded w-100">
-        <thead class="text-white fw-bold" style="background: linear-gradient(90deg, #0d6efd, #3B82F6);">
+    <table id="tabel_pendaftaran" class="table table-bordered table-hover align-middle nowrap shadow-sm rounded"
+        style="width:100%">
+        <thead class="text-white fw-bold" style="background: linear-gradient(90deg, #0d6efd, #198754);">
             <tr>
                 <th class="text-center"><i class="bx bx-hash fs-5"></i></th>
                 <th><i class="bx bx-chalkboard fs-5 me-1"></i> Kelas</th>
@@ -68,9 +70,9 @@
         });
 
 
-        $(window).on('resize', function() {
-            table.columns.adjust();
-        });
+        // $(window).on('resize', function() {
+        //     table.columns.adjust();
+        // });
 
         // Tooltip Bootstrap
         $('[data-bs-toggle="tooltip"]').tooltip();

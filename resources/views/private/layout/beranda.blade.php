@@ -39,7 +39,7 @@
                         <i class='bx bx-money bx-lg me-3'></i>
                         <div>
                             <h6 class="card-title mb-1">Total Tagihan</h6>
-                            <p class="card-text fs-5">Rp {{ number_format($totalTagihan, 0, ',', '.') }}</p>
+                            <p class="card-text fs-5">Rp {{ number_format($totalTagihan, 2, ',', '.') }}</p>
                         </div>
                     </div>
                 </div>
@@ -50,7 +50,7 @@
                         <i class='bx bx-wallet bx-lg me-3'></i>
                         <div>
                             <h6 class="card-title mb-1">Total Bayar</h6>
-                            <p class="card-text fs-5">Rp {{ number_format($totalBayar, 0, ',', '.') }}</p>
+                            <p class="card-text fs-5">Rp {{ number_format($totalBayar, 2, ',', '.') }}</p>
                         </div>
                     </div>
                 </div>

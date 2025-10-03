@@ -28,7 +28,7 @@
                                 <div>
                                     <strong class="text-dark">
                                         <i class="bx bx-calendar me-1"></i>
-                                        {{ \Carbon\Carbon::create()->month($item->bulan)->translatedFormat('F') }}
+                                        {{ \Carbon\Carbon::create()->month($item->bulan)->locale('id')->translatedFormat('F') }}
                                         {{ $item->tahun }}
                                     </strong>
                                     <div class="text-muted small">
@@ -71,7 +71,8 @@
                                                 <tr>
                                                     <td class="text-center">{{ $k + 1 }}</td>
                                                     <td class="text-center">
-                                                        {{ \Carbon\Carbon::parse($d->tgl_bayar)->format('d/m/Y') }}
+                                                        {{ \Carbon\Carbon::parse($d->tgl_bayar)->locale('id')->translatedFormat('d F Y') }}
+
                                                     </td>
                                                     <td class="text-end fw-semibold">
                                                         Rp {{ number_format($d->nominal_bayar, 0, ',', '.') }}

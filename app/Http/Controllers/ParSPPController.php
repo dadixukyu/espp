@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ParSPPModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 
 class ParSPPController extends Controller
@@ -23,21 +24,27 @@ class ParSPPController extends Controller
     public function show(string $id)
     {
         if (request()->ajax()) {
+            // Ambil tahun login dari session, jika belum ada gunakan tahun sekarang
+            $tahun = session('tahun_login', date('Y'));
+
+            // Ambil data SPP berdasarkan tahun login
             $data = [
-                'result' => ParSPPModel::all(), // ambil semua baris
+                'result' => ParSPPModel::where('tahun', $tahun)->get(),
             ];
 
             return view('private.data.par_spp.show', $data);
         } else {
-            exit('Maaf Tidak Dapat diproses...');
+            abort(403, 'Maaf, permintaan ini tidak dapat diproses.');
         }
     }
 
     public function create()
     {
         if (request()->ajax()) {
+            $tahun = session('tahun_login');
             $data = [
                 'title_form' => 'FORM INPUT NOMINAL SPP',
+                'tahun_login' => session('tahun_login') ?? date('Y'),
             ];
 
             return view('private.data.par_spp.formadd', $data);
@@ -49,12 +56,12 @@ class ParSPPController extends Controller
     public function store(Request $r)
     {
         $validator = Validator::make($r->all(), [
-            'tahun' => 'required',
+            // 'tahun' => 'required',
             // 'nama_spp'   => 'required',
             'nominal' => 'required',
             'keterangan' => 'nullable|string',
         ], [
-            'tahun.required' => 'Tahun tidak boleh kosong',
+            // 'tahun.required' => 'Tahun tidak boleh kosong',
             // 'kode_spp.unique'   => 'Kode SPP sudah ada',
             // 'nama_spp.required' => 'Nama SPP tidak boleh kosong',
             'nominal.required' => 'Nominal tidak boleh kosong',
@@ -71,10 +78,11 @@ class ParSPPController extends Controller
         $nominal = preg_replace('/[^0-9]/', '', $r->nominal);
 
         $post = ParSPPModel::create([
-            'tahun' => $r->tahun,
+            // 'tahun' => $r->tahun,
             // 'nama_spp'   => $r->nama_spp,
             'nominal' => $nominal,
             'keterangan' => $r->keterangan,
+            'tahun' => Session::get('tahun_login'),
         ]);
 
         return response()->json([
@@ -108,12 +116,12 @@ class ParSPPController extends Controller
         }
 
         $validator = Validator::make($r->all(), [
-            'tahun' => 'required|numeric|digits:4',
+            // 'tahun' => 'required|numeric|digits:4',
             // 'nama_spp'   => 'required',
             'nominal' => 'required',
             'keterangan' => 'nullable|string',
         ], [
-            'tahun.required' => 'Tahun tidak boleh kosong',
+            // 'tahun.required' => 'Tahun tidak boleh kosong',
             // 'kode_spp.unique'   => 'Kode SPP sudah ada',
             // 'nama_spp.required' => 'Nama SPP tidak boleh kosong',
             'nominal.required' => 'Nominal tidak boleh kosong',
@@ -128,7 +136,7 @@ class ParSPPController extends Controller
         $nominal = preg_replace('/[^0-9]/', '', $r->nominal);
 
         $parspp->update([
-            'tahun' => $r->tahun,
+            // 'tahun' => $r->tahun,
             'nominal' => $nominal,
             'keterangan' => $r->keterangan,
         ]);

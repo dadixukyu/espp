@@ -22,11 +22,11 @@
                     <!-- Filter Form -->
                     <form id="filterForm" class="row g-3 mb-3">
                         <!-- Pilih Tahun -->
-                        <div class="col-md-3">
+                        {{-- <div class="col-md-3">
                             <label class="form-label fw-bold">Tahun</label>
                             <input type="text" name="tahun" class="form-control"
                                 value="{{ Session::get('tahun_login') }}" readonly>
-                        </div>
+                        </div> --}}
 
                         <!-- Dropdown Kelas -->
                         <div class="col-md-4">

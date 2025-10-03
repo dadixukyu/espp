@@ -17,6 +17,39 @@
     .modal-body::-webkit-scrollbar-thumb:hover {
         background: #0b5ed7;
     }
+
+    /* Hover & shadow ringan */
+    .hover-shadow-sm {
+        transition: all 0.3s ease;
+    }
+
+    .hover-shadow-sm:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+    }
+
+    /* Highlight saat dicentang */
+    .form-check-input:checked+label {
+        border: 2px solid #0d6efd;
+        border-radius: 5px;
+        padding: 2px 6px;
+        background-color: #e7f1ff;
+    }
+
+    /* Badge warna */
+    .badge-lunas {
+        background-color: #198754;
+    }
+
+    .badge-terpilih {
+        background-color: #0d6efd;
+        color: #fff;
+    }
+
+    /* Total Bayar animasi */
+    #totalBayar {
+        transition: all 0.3s ease;
+    }
 </style>
 
 <div class="modal fade" id="modalFormData" tabindex="-1" aria-labelledby="labelModalSPP" aria-hidden="true"
@@ -36,6 +69,8 @@
                 @csrf
                 <input type="hidden" name="id_siswa" value="{{ $tmp_id_siswa }}">
                 <input type="hidden" id="nominal_spp" name="nominal_spp" value="{{ $nominal_spp }}">
+                <input type="hidden" name="tahun" value="{{ $tahun_login }}">
+
 
                 {{-- Body (scrollable) --}}
                 <div class="modal-body" style="max-height:70vh; overflow-y:auto;">
@@ -77,6 +112,7 @@
                             <select name="metode_bayar" class="form-select" required>
                                 <option value="">-- Pilih Metode Bayar --</option>
                                 <option value="tunai">💵 Tunai</option>
+                                <option value="transfer">💵 Transfer</option>
                             </select>
                         </div>
                     </div>
@@ -88,14 +124,15 @@
                             @foreach ($bulan_status as $no => $b)
                                 <div class="col-6 col-md-3 mb-2">
                                     <div
-                                        class="form-check p-2 border rounded hover-shadow-sm @if ($b['lunas']) bg-light @endif">
+                                        class="form-check p-2 border rounded hover-shadow-sm
+                                        @if ($b['lunas']) bg-light text-muted @endif">
                                         <input type="checkbox" class="form-check-input bulan-checkbox" name="bulan[]"
                                             value="{{ $no }}" id="bulan{{ $no }}"
                                             @if ($b['lunas']) checked disabled title="Bulan ini sudah lunas" @endif>
                                         <label for="bulan{{ $no }}" class="form-check-label ms-1">
                                             {{ $b['nama'] }}
                                             @if ($b['lunas'])
-                                                <span class="badge bg-success ms-1">Lunas</span>
+                                                <span class="badge badge-lunas ms-1">Lunas</span>
                                             @endif
                                         </label>
                                     </div>
@@ -115,13 +152,12 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold">Status Bayar</label>
                         <select name="status_bayar" class="form-select">
-                            <option value="belum">⏳ Belum Lunas</option>
                             <option value="lunas">✅ Lunas</option>
                         </select>
                     </div>
                 </div>
 
-                {{-- Footer (sticky) --}}
+                {{-- Footer --}}
                 <div class="modal-footer bg-light sticky-bottom">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                         <i class="bx bx-x me-1"></i> Tutup
@@ -157,9 +193,19 @@
             }).format(total));
         }
 
+        // Batasi checkbox hanya satu dan tambahkan badge "Dipilih"
         $('.bulan-checkbox').on('change', function() {
-            hitungTotal();
+            $('.bulan-checkbox').not(this).prop('checked', false)
+                .closest('.form-check').find('.badge-terpilih').remove();
+
+            $(this).closest('.form-check').find('.badge-terpilih').remove();
+            if ($(this).is(':checked')) {
+                $(this).closest('.form-check').find('label').append(
+                    '<span class="badge badge-terpilih ms-1">Dipilih</span>');
+            }
+
             $(this).closest('.form-check').toggleClass('border-primary', $(this).is(':checked'));
+            hitungTotal();
         });
 
         $('.formData').on('submit', function() {

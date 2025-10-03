@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Laporan SPP Periode {{ $tahun }}</title>
+    <title>Laporan Pendaftaran {{ $tahun }}</title>
     <style>
         html {
             margin-top: 10px;
@@ -96,50 +96,48 @@
 </head>
 
 <body>
+    <!-- KOP SURAT -->
     <div class="kop">
         <img src="{{ public_path('assets/images/logo_smk.png') }}" alt="Logo">
         <h2>PEMERINTAH PROVINSI SUMATERA SELATAN</h2>
         <h2>SMK YP GAJAH MADA PALEMBANG</h2>
-        <p>Jl. Banten II, 16 Ulu, Seberang Ulu II, Palembang, Sumatera Selatan</p>
+        <p>Jl. Banten II, 16 Ulu, Kec. Seberang Ulu II, Kota Palembang, Sumatera Selatan 30116</p>
     </div>
 
-    <h4><u>LAPORAN PEMBAYARAN SPP</u></h4>
-    <h4>PER {{ strtoupper($mode_laporan) }} - TAHUN {{ $tahun }}</h4>
+    <!-- JUDUL -->
+    <h4><u>LAPORAN PENDAFTARAN SISWA</u></h4>
+    <h4>TAHUN {{ $tahun }}</h4>
 
+    <p class="summary">Jumlah Pendaftar: {{ $jumlah_pendaftar }}</p>
+
+    <!-- TABEL -->
     <table>
         <thead>
             <tr>
-                <th>No</th>
-                <th>
-                    @if ($mode_laporan === 'bulan')
-                        Bulan
-                    @elseif($mode_laporan === 'semester')
-                        Semester
-                    @else
-                        Tahun
-                    @endif
-                </th>
-                <th>Total Bayar</th>
+                <th style="width: 30px;">No</th>
+                <th>Nama Lengkap</th>
+                <th style="width: 90px;">NISN</th>
+                <th style="width: 70px;">Kelas</th>
+                <th>Alamat</th>
             </tr>
         </thead>
         <tbody>
-            @foreach ($result as $row)
+            @foreach ($data as $key => $d)
                 <tr>
-                    <td>{{ $loop->iteration }}</td>
-                    <td>{{ $row->nama_periode ?? '-' }}</td>
-                    <td style="text-align: right;">Rp {{ number_format($row->total_bayar ?? 0, 2, ',', '.') }}</td>
+                    <td style="text-align:center;">{{ $key + 1 }}</td>
+                    <td>{{ $d->nama_lengkap }}</td>
+                    <td style="text-align:center;">{{ $d->nisn }}</td>
+                    <td style="text-align:center;">{{ $d->kelas }}</td>
+                    <td>{{ $d->alamat }}</td>
                 </tr>
             @endforeach
-            <tr>
-                <th colspan="2">Total Keseluruhan</th>
-                <th style="text-align: right;">Rp {{ number_format($result->sum('total_bayar'), 2, ',', '.') }}</th>
-            </tr>
         </tbody>
     </table>
 
+    <!-- FOOTER -->
     <div class="footer">
-        Palembang, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }} <br><br><br>
-        (............................)
+        Palembang, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }} <br>
+
     </div>
 </body>
 

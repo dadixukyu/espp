@@ -24,11 +24,11 @@
                         <hr class="my-2" />
 
 
-                        <div class="mb-2">
+                        {{-- <div class="mb-2">
                             <label class="form-label mb-1">Tahun <span class="text-danger">*</span></label>
                             <input type="number" name="tahun" class="form-control form-control-sm" min="2000"
                                 max="2099" placeholder="Masukkan tahun">
-                        </div>
+                        </div> --}}
 
                         <div class="mb-2">
                             <label class="form-label mb-1">Nama Biaya <span class="text-danger">*</span></label>

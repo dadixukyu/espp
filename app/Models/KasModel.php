@@ -11,6 +11,9 @@ class KasModel extends Model
     protected $primaryKey = 'id_kas';
 
     protected $fillable = [
+        'id_pendaftaran',
+        'id_siswa',
+        // 'bulan',
         'tahun',
         'tanggal',
         'kd_kas',
@@ -23,5 +26,6 @@ class KasModel extends Model
     protected $casts = [
         'tanggal' => 'date',
         'jumlah' => 'decimal:2',
+        // 'bulan' => 'array', // cast JSON ke array
     ];
 }

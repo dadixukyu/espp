@@ -20,8 +20,9 @@
         .kop {
             text-align: center;
             border-bottom: 3px double #000;
-            padding-bottom: 25px;
-            margin-bottom: 15px;
+            padding-bottom: 30px;
+            /* samakan dengan laporan pendaftaran */
+            margin-bottom: 20px;
             position: relative;
         }
 
@@ -30,6 +31,7 @@
             left: 25px;
             top: 5px;
             width: 55px;
+            /* ukuran logo sama */
             height: auto;
         }
 
@@ -66,7 +68,8 @@
         th,
         td {
             border: 1px solid #000;
-            padding: 4px 6px;
+            padding: 3px 5px;
+            /* samakan juga dengan laporan pendaftaran */
             font-size: 10px;
             line-height: 1.3;
         }
@@ -85,7 +88,7 @@
         .footer {
             margin-top: 35px;
             text-align: right;
-            font-size: 9px;
+            font-size: 8px;
         }
     </style>
 </head>

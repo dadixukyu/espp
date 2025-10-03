@@ -68,13 +68,15 @@ class PendaftaranController extends Controller
 
     public function create()
     {
-        // {
         if (request()->ajax()) {
-            // Ambil SPP terbaru satu record
-            $parSpp = ParSppModel::orderBy('tahun', 'desc')->first();
+            // Ambil tahun login dari session
             $tahun = session('tahun_login');
-            // Ambil semua biaya lain
-            $parBiaya = ParBiayaModel::orderBy('tahun', 'desc')->get();
+
+            // Ambil SPP sesuai tahun login
+            $parSpp = ParSppModel::where('tahun', $tahun)->first();
+
+            // Ambil semua biaya lain sesuai tahun login
+            $parBiaya = ParBiayaModel::where('tahun', $tahun)->get();
 
             // Ambil semua kelas
             $parKelas = ParKelasModel::orderBy('kelas', 'asc')
@@ -82,13 +84,16 @@ class PendaftaranController extends Controller
                 ->unique('kelas')
                 ->values();
 
+            // Ambil semua jurusan
             $parJurusan = ParKelasModel::orderBy('jurusan', 'asc')
                 ->get()
                 ->unique('jurusan')
                 ->values();
 
-            // Ambil tahun ajaran yang aktif
-            $tahunAjaran = ParTahunAjaranModel::aktif()->get();
+            // Ambil tahun ajaran sesuai tahun login
+            $tahunAjaran = ParTahunAjaranModel::where('tahun', $tahun)
+                ->aktif()
+                ->get();
 
             $data = [
                 'title_form' => 'FORM INPUT DATA SISWA BARU',
@@ -162,6 +167,8 @@ class PendaftaranController extends Controller
         // AMBIL NOMINAL BIAYA SPP
         $spp = ParSppModel::where('tahun', $r->kategori_biaya)->firstOrFail();
 
+        $biaya = ParBiayaModel::where('tahun', $r->biaya_lain)->firstOrFail();
+
         // Ambil data kelas & jurusan
         $kelas = ParKelasModel::findOrFail($r->kelas);
         $jurusan = ParKelasModel::findOrFail($r->jurusan);
@@ -186,12 +193,14 @@ class PendaftaranController extends Controller
             'no_hp' => $r->no_hp,
             'tgl_daftar' => $r->tgl_daftar,
             'kategori_biaya' => $spp->nominal,
+            'biaya_lain' => $biaya->tahun,
+
             'pengurangan_biaya' => $r->pengurangan_biaya
                                     ? preg_replace('/[^0-9]/', '', $r->pengurangan_biaya)
                                     : 0,
-            'biaya_pendaftaran' => $r->biaya_pendaftaran
-                                    ? preg_replace('/[^0-9]/', '', $r->biaya_pendaftaran)
-                                    : 0,
+            // 'biaya_pendaftaran' => $r->biaya_pendaftaran
+            //                         ? preg_replace('/[^0-9]/', '', $r->biaya_pendaftaran)
+            //                         : 0,
             'tahun' => Session::get('tahun_login'),
         ];
 
@@ -213,6 +222,8 @@ class PendaftaranController extends Controller
             'email' => $r->email,
             'no_hp' => $r->no_hp,
             'kategori_biaya' => $spp->nominal,
+            'biaya_lain' => $biaya->tahun,
+
             'pengurangan_biaya' => $r->pengurangan_biaya
                                     ? preg_replace('/[^0-9]/', '', $r->pengurangan_biaya)
                                     : 0,
@@ -239,12 +250,33 @@ class PendaftaranController extends Controller
     {
         if (request()->ajax()) {
 
+            $tahun = session('tahun_login'); // ambil tahun login
+
+            // Ambil data pendaftaran beserta relasi siswa
             $row = PendaftaranModel::with('siswa')->where('id_pendaftaran', $id)->firstOrFail();
-            $parSpp = ParSppModel::orderBy('tahun', 'desc')->first();
-            $parBiaya = ParBiayaModel::orderBy('tahun', 'desc')->get();
-            $parKelas = ParKelasModel::orderBy('kelas', 'asc')->get()->unique('kelas')->values();
-            $parJurusan = ParKelasModel::orderBy('jurusan', 'asc')->get()->unique('jurusan')->values();
-            $tahunAjaran = ParTahunAjaranModel::aktif()->get();
+
+            // Ambil SPP sesuai tahun login
+            $parSpp = ParSppModel::where('tahun', $tahun)->first();
+
+            // Ambil semua biaya sesuai tahun login
+            $parBiaya = ParBiayaModel::where('tahun', $tahun)->get();
+
+            // Ambil semua kelas
+            $parKelas = ParKelasModel::orderBy('kelas', 'asc')
+                ->get()
+                ->unique('kelas')
+                ->values();
+
+            // Ambil semua jurusan
+            $parJurusan = ParKelasModel::orderBy('jurusan', 'asc')
+                ->get()
+                ->unique('jurusan')
+                ->values();
+
+            // Ambil tahun ajaran sesuai tahun login yang aktif
+            $tahunAjaran = ParTahunAjaranModel::where('tahun', $tahun)
+                ->aktif()
+                ->get();
 
             return view('private.data.pendaftaran.formedit', [
                 'id' => $id,
@@ -313,7 +345,7 @@ class PendaftaranController extends Controller
                 // Ambil data pendaftaran dan siswa
                 $pendaftaran = PendaftaranModel::findOrFail($id); // dari route
                 $siswa = SiswaModel::findOrFail($r->id_siswa); // dari hidden input
-
+                $biaya = ParBiayaModel::where('tahun', $r->biaya_lain)->firstOrFail();
                 // Ambil referensi spp, kelas, jurusan
                 $spp = ParSppModel::where('tahun', $r->kategori_biaya)->firstOrFail();
                 $kelas = ParKelasModel::findOrFail($r->kelas);
@@ -338,12 +370,14 @@ class PendaftaranController extends Controller
                     'no_hp' => $r->no_hp,
                     'tgl_daftar' => $r->tgl_daftar,
                     'kategori_biaya' => $spp->nominal,
+                    'biaya_lain' => $biaya->tahun,
                     'pengurangan_biaya' => $r->pengurangan_biaya
                                             ? preg_replace('/[^0-9]/', '', $r->pengurangan_biaya)
                                             : 0,
-                    'biaya_pendaftaran' => $r->biaya_pendaftaran
-                                            ? preg_replace('/[^0-9]/', '', $r->biaya_pendaftaran)
-                                            : 0,
+                    // 'biaya_pendaftaran' => $r->biaya_pendaftaran
+                    //                         ? preg_replace('/[^0-9]/', '', $r->biaya_pendaftaran)
+                    //                         : 0,
+                    'tahun' => Session::get('tahun_login'),
                 ];
 
                 // Data untuk update tabel siswa
@@ -363,6 +397,7 @@ class PendaftaranController extends Controller
                     'email' => $r->email,
                     'no_hp' => $r->no_hp,
                     'kategori_biaya' => $spp->nominal,
+                    'biaya_lain' => $biaya->tahun,
                     'pengurangan_biaya' => $r->pengurangan_biaya
                                             ? preg_replace('/[^0-9]/', '', $r->pengurangan_biaya)
                                             : 0,
@@ -389,16 +424,35 @@ class PendaftaranController extends Controller
     {
         if (request()->ajax()) {
 
-            $post = PendaftaranModel::where('id_pendaftaran', $id)->delete();
-            // $post = PendaftaranModel::findOrFail($id);
-            // $post->update(['kd_data' => null]); // hanya set null, data tetap ada
+            $pendaftaran = PendaftaranModel::find($id);
 
-            if ($post) {
+            if ($pendaftaran) {
+
+                // Cek apakah ada tagihan lain
+                if ($pendaftaran->tagihanLain()->count() > 0) {
+                    return response()->json([
+                        'error' => 'Data Pendaftaran tidak bisa dihapus karena sudah ada Tagihan Lain terkait.',
+                    ]);
+                }
+
+                // Hapus siswa terkait
+                if ($pendaftaran->siswa) {
+                    $pendaftaran->siswa->delete(); // pastikan SiswaModel pakai primary key yang benar
+                }
+
+                // Hapus pendaftaran
+                $pendaftaran->delete();
+
                 return response()->json([
-                    'success' => 'Data Pendaftaran berhasil dihapus',
+                    'success' => 'Data Pendaftaran dan Siswa berhasil dihapus',
                     'myReload' => 'pendaftarandata',
                 ]);
+            } else {
+                return response()->json([
+                    'error' => 'Data tidak ditemukan',
+                ]);
             }
+
         } else {
             exit('Maaf Tidak Dapat diproses...');
         }

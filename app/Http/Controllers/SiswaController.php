@@ -8,6 +8,7 @@ use App\Models\ParSPPModel;
 use App\Models\ParTahunAjaranModel;
 use App\Models\SiswaModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 
 class SiswaController extends Controller
@@ -62,11 +63,14 @@ class SiswaController extends Controller
     public function create()
     {
         if (request()->ajax()) {
-            // Ambil SPP terbaru satu record
-            $parSpp = ParSppModel::orderBy('tahun', 'desc')->first();
+            // Ambil tahun login dari session
+            $tahun = session('tahun_login');
 
-            // Ambil semua biaya lain
-            $parBiaya = ParBiayaModel::orderBy('tahun', 'desc')->get();
+            // Ambil SPP sesuai tahun login
+            $parSpp = ParSppModel::where('tahun', $tahun)->first();
+
+            // Ambil semua biaya lain sesuai tahun login
+            $parBiaya = ParBiayaModel::where('tahun', $tahun)->get();
 
             // Ambil semua kelas
             $parKelas = ParKelasModel::orderBy('kelas', 'asc')
@@ -74,13 +78,16 @@ class SiswaController extends Controller
                 ->unique('kelas')
                 ->values();
 
+            // Ambil semua jurusan
             $parJurusan = ParKelasModel::orderBy('jurusan', 'asc')
                 ->get()
                 ->unique('jurusan')
                 ->values();
 
-            // Ambil tahun ajaran yang aktif
-            $tahunAjaran = ParTahunAjaranModel::aktif()->get();
+            // Ambil tahun ajaran sesuai tahun login yang aktif
+            $tahunAjaran = ParTahunAjaranModel::where('tahun', $tahun)
+                ->aktif()
+                ->get();
 
             $data = [
                 'title_form' => 'FORM INPUT DATA SISWA BARU',
@@ -201,42 +208,31 @@ class SiswaController extends Controller
     public function edit(string $id)
     {
         if (request()->ajax()) {
-            $row = SiswaModel::where('id_siswa', $id)->first();
-            // $parSpp = ParSPPModel::all();
-            $parSpp = ParSppModel::orderBy('tahun', 'desc')->first();
-            // Ambil semua biaya lain
-            $parBiaya = ParBiayaModel::orderBy('tahun', 'desc')->get();
 
-            // Ambil semua kelas
-            $parKelas = ParKelasModel::orderBy('kelas', 'asc')
-                ->get()
-                ->unique('kelas')
-                ->values();
+            $row = SiswaModel::findOrFail($id);
 
-            $parJurusan = ParKelasModel::orderBy('jurusan', 'asc')
-                ->get()
-                ->unique('jurusan')
-                ->values();
-            //   $selectedSpp = $parSpp->firstWhere('tahun', $row->kategori_biaya);
+            // Ambil tahun login dari session
+            $tahun = session('tahun_login');
 
-            // Ambil tahun ajaran yang aktif
-            $tahunAjaran = ParTahunAjaranModel::aktif()->get();
+            // Parameter input menyesuaikan tahun login
+            $parSpp = ParSppModel::where('tahun', $tahun)->first();
+            $parBiaya = ParBiayaModel::where('tahun', $tahun)->get();
+            $tahunAjaran = ParTahunAjaranModel::where('tahun', $tahun)->aktif()->get();
 
-            $data = [
+            $parKelas = ParKelasModel::orderBy('kelas', 'asc')->get()->unique('kelas')->values();
+            $parJurusan = ParKelasModel::orderBy('jurusan', 'asc')->get()->unique('jurusan')->values();
+
+            return view('private.data.siswa.formedit', [
                 'id' => $id,
                 'row' => $row,
-
-                'title_form' => 'FORM EDIT DATA SISWA ',
+                'title_form' => 'FORM EDIT DATA SISWA',
                 'parSpp' => $parSpp,
                 'parBiaya' => $parBiaya,
+                'tahunAjaran' => $tahunAjaran,
                 'parKelas' => $parKelas,
                 'parJurusan' => $parJurusan,
-                'tahunAjaran' => $tahunAjaran,
-                // 'selectedSpp' => $selectedSpp
+            ]);
 
-            ];
-
-            return view('private.data.siswa.formedit', $data);
         } else {
             exit('Maaf, request tidak dapat diproses');
         }

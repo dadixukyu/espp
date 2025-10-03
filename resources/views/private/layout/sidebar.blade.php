@@ -104,6 +104,8 @@
                 <ul>
                     <li><a href="{{ route('laporanpendaftarandata.index') }}"><i class="bx bx-spreadsheet"></i>
                             Pendaftaran</a></li>
+                    <li><a href="{{ route('laporanbiayalaindata.index') }}"><i class="bx-receipt"></i>
+                            Biaya Lain</a></li>
                     <li><a href="{{ route('laporansppdata.index') }}"><i class="bx bx-bar-chart-square"></i> SPP</a>
                     </li>
                     <li><a href="{{ route('laporankasdata.index') }}"><i class="bx bx-file-find"></i> KAS</a></li>

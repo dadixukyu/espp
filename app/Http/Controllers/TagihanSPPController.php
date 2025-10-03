@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KasModel;
 use App\Models\SiswaModel;
 use App\Models\TagihanSPPDetailModel;
 use App\Models\TagihanSPPModel;
@@ -78,14 +79,19 @@ class TagihanSPPController extends Controller
             abort(403, 'Akses tidak diperbolehkan');
         }
 
+        // Ambil tahun login dari session
+        $tahun_login = session('tahun_login', date('Y'));
+
         // Ambil data siswa berdasarkan ID
         $siswa = SiswaModel::findOrFail($id);
 
         // Hitung nominal SPP per bulan (jika ada pengurangan biaya)
         $nominal_spp = ($siswa->kategori_biaya ?? 0) - ($siswa->pengurangan_biaya ?? 0);
 
-        // Ambil semua tagihan SPP siswa
-        $tagihan_spp = TagihanSPPModel::where('id_siswa', $id)->get();
+        // Ambil semua tagihan SPP siswa untuk tahun login
+        $tagihan_spp = TagihanSPPModel::where('id_siswa', $id)
+            ->where('tahun', $tahun_login)
+            ->get();
 
         // Buat array bulan (1-12)
         $bulan = [
@@ -114,6 +120,7 @@ class TagihanSPPController extends Controller
             'siswa' => $siswa,
             'bulan_status' => $bulan_status,
             'nominal_spp' => $nominal_spp,
+            'tahun_login' => $tahun_login, // kirim ke view biar jelas
         ];
 
         return view('private.data.tagihan_spp.formadd', $data);
@@ -128,10 +135,12 @@ class TagihanSPPController extends Controller
             'metode_bayar' => 'required|string|max:50',
             'bulan' => 'required|array|min:1',
             'status_bayar' => 'required|in:belum,lunas',
+            'tahun' => 'required|integer',
         ], [
             'id_siswa.required' => 'Siswa wajib dipilih',
             'bulan.required' => 'Minimal satu bulan harus dicentang',
             'tgl_bayar.required' => 'Tanggal bayar wajib diisi',
+            'tahun.required' => 'Tahun wajib ada',
         ]);
 
         if ($validator->fails()) {
@@ -141,16 +150,21 @@ class TagihanSPPController extends Controller
         DB::beginTransaction();
 
         try {
+            $siswa = SiswaModel::find($request->id_siswa);
+
+            $total_bayar = 0; // untuk kas
+            $bulan_terbayar = [];
+
             foreach ($request->bulan as $bulan) {
-                // Buat atau ambil tagihan SPP
+                // Buat atau ambil tagihan SPP untuk tahun login
                 $tagihan = TagihanSPPModel::firstOrCreate(
                     [
                         'id_siswa' => $request->id_siswa,
                         'bulan' => $bulan,
-                        'tgl_bayar' => $request->tgl_bayar,
-                        'tahun' => date('Y'),
+                        'tahun' => $request->tahun,
                     ],
                     [
+                        'tgl_bayar' => $request->tgl_bayar,
                         'nominal' => $request->nominal_spp,
                         'status_bayar' => 'belum',
                     ]
@@ -160,23 +174,40 @@ class TagihanSPPController extends Controller
                 TagihanSPPDetailModel::create([
                     'id_tagihan' => $tagihan->id_tagihan,
                     'bulan' => $bulan,
-                    'tahun' => date('Y'),
+                    'tahun' => $request->tahun,
                     'tgl_bayar' => $request->tgl_bayar,
                     'nominal_bayar' => $request->nominal_spp,
                     'metode_bayar' => $request->metode_bayar,
-                    'keterangan' => $request->keterangan ?? null,
+                    'keterangan' => $request->status_bayar === 'lunas'
+                        ? 'Pembayaran lunas untuk bulan '.$bulan
+                        : ($request->keterangan ?? null),
                 ]);
 
                 // Update status bayar di tabel utama
                 $tagihan->update([
                     'status_bayar' => $request->status_bayar,
+                    'tgl_bayar' => $request->tgl_bayar,
                 ]);
+
+                $total_bayar += $request->nominal_spp;
+                $bulan_terbayar[] = $bulan;
             }
+
+            // Simpan ke kas masuk 1 record
+            KasModel::create([
+                'id_pendaftaran' => $siswa->id_pendaftaran,
+                'id_siswa' => $siswa->id_siswa,
+                'tahun' => $request->tahun,
+                'tanggal' => $request->tgl_bayar,
+                'kd_kas' => 1, // kas masuk
+                'keterangan' => 'SPP Bulan '.implode(', ', $bulan_terbayar).' - '.$siswa->nama_lengkap,
+                'jumlah' => $total_bayar,
+            ]);
 
             DB::commit();
 
             return response()->json([
-                'success' => 'Pembayaran SPP berhasil disimpan',
+                'success' => 'Pembayaran SPP berhasil disimpan dan tercatat di kas',
                 'myReload' => 'tagihan_sppdata',
             ]);
         } catch (\Exception $e) {
@@ -190,18 +221,20 @@ class TagihanSPPController extends Controller
 
     public function show_tagihan_spp($id_siswa)
     {
+        $tahun_login = session('tahun_login', date('Y'));
+
         // Ambil data tagihan SPP per bulan + relasi detail
         $result = TagihanSPPModel::with(['detail' => function ($q) {
             $q->orderBy('tgl_bayar', 'asc');
         }])
             ->where('id_siswa', $id_siswa)
+            ->where('tahun', $tahun_login) // filter sesuai tahun login
             ->orderBy('bulan', 'asc')
             ->get();
 
         if (request()->ajax()) {
             return view('private.data.tagihan_spp.show_tagihan_detail', compact('result'));
         }
-
     }
 
     public function edit(TagihanSPPModal $tagihanSPPModal)
@@ -227,8 +260,9 @@ class TagihanSPPController extends Controller
         }
 
         DB::beginTransaction();
+
         try {
-            $tagihan = TagihanSPPModel::find($id);
+            $tagihan = TagihanSPPModel::with('detail', 'siswa')->find($id);
 
             if (! $tagihan) {
                 return response()->json([
@@ -236,16 +270,47 @@ class TagihanSPPController extends Controller
                 ], 404);
             }
 
-            // Hapus semua detail pembayaran dulu
-            $tagihan->detail()->delete();
+            $id_siswa = $tagihan->id_siswa;
+            $tgl_bayar = $tagihan->tgl_bayar;
 
-            // Hapus header tagihan
-            $tagihan->delete();
+            foreach ($tagihan->detail as $detail) {
+                // Ambil kas terkait (per siswa & tanggal)
+                $kas = KasModel::where('id_siswa', $id_siswa)
+                    ->where('kd_kas', 1)
+                    ->where('tanggal', $tgl_bayar)
+                    ->first();
+
+                if ($kas) {
+                    $bulanSekarang = $kas->bulan ?? []; // pastikan array
+                    if (($key = array_search($detail->bulan, $bulanSekarang)) !== false) {
+                        // Kurangi jumlah & hapus bulan
+                        $kas->jumlah -= $detail->nominal_bayar;
+                        unset($bulanSekarang[$key]);
+                    }
+
+                    $bulanSekarang = array_values($bulanSekarang);
+
+                    if (count($bulanSekarang) > 0) {
+                        $kas->bulan = $bulanSekarang;
+                        $kas->keterangan = 'SPP Bulan '.implode(',', $bulanSekarang).' - '.$tagihan->siswa->nama;
+                        $kas->save();
+                    } else {
+                        $kas->delete();
+                    }
+                }
+
+                $detail->delete();
+            }
+
+            // Hapus header jika tidak ada detail tersisa
+            if ($tagihan->detail()->count() == 0) {
+                $tagihan->delete();
+            }
 
             DB::commit();
 
             return response()->json([
-                'success' => 'Tagihan dan semua detail berhasil dihapus',
+                'success' => 'Tagihan, detail, dan kas terkait berhasil dihapus/diupdate',
                 'myReload' => 'tagihan_sppdata',
             ]);
         } catch (\Exception $e) {

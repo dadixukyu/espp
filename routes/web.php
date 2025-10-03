@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\KasController;
+use App\Http\Controllers\LaporanBiayaLainController;
 use App\Http\Controllers\LaporanKasController;
 use App\Http\Controllers\LaporanPendaftaranController;
 use App\Http\Controllers\LaporanSPPController;
@@ -72,6 +73,14 @@ Route::group(['middleware' => ['auth']], function () {
         Route::resource('tagihan_sppdata', TagihanSPPController::class);
 
         // tagihan lainnya
+        Route::get('tagihan-lain/cetak-transaksi/{kode_transaksi}', [TagihanLainController::class, 'cetak_transaksi'])
+            ->name('tagihanlaindata.cetak_transaksi');
+
+        Route::get('tagihan-lain/cetak-detail/{id_detail}', [TagihanLainController::class, 'cetak_detail'])
+            ->name('tagihanlaindata.cetak_detail');
+
+        Route::get('tagihan-lain/cetak-semua/{id_pendaftaran}', [TagihanLainController::class, 'cetak_semua'])
+            ->name('tagihanlaindata.cetak_semua');
 
         Route::get('tagihanlaindata/create/{id}', [TagihanLainController::class, 'create'])
             ->name('tagihanlaindata.create');
@@ -124,5 +133,13 @@ Route::group(['middleware' => ['auth']], function () {
         Route::get('laporankasdata/show', [LaporanKasController::class, 'show'])->name('laporankasdata.show');
 
         Route::resource('laporankasdata', LaporanKasController::class);
+
+        // laporan kas
+        Route::get('laporanbiayalaindata/cetak_biaya_pdf',
+            [LaporanBiayaLainController::class, 'cetak_biaya_pdf']
+        )->name('laporanbiayalaindata.cetak_biaya_pdf');
+        Route::get('laporanbiayalaindata/show', [LaporanBiayaLainController::class, 'show'])->name('laporanbiayalaindata.show');
+
+        Route::resource('laporanbiayalaindata', LaporanBiayaLainController::class);
     });
 });

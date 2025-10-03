@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KasModel;
 use App\Models\ParBiayaModel;
 use App\Models\PendaftaranModel;
 use App\Models\TagihanLainDetailModel;
 use App\Models\TagihanLainModel;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 
 class TagihanLainController extends Controller
@@ -27,61 +30,62 @@ class TagihanLainController extends Controller
     /**
      * Show: Menampilkan detail tagihan & daftar pembayaran
      */
-    public function show(Request $r)
+    public function show(Request $request)
     {
-        if ($r->ajax()) {
-
-            $tahun_login = session('tahun_login', date('Y'));
-
-            // Ambil semua data pendaftaran sesuai tahun_login
-            $pendaftaran = PendaftaranModel::with(['spp', 'tagihanLain.detail'])
-                ->where('tahun', $tahun_login) // pastikan ada field 'tahun' di tabel pendaftaran
-                ->get();
-
-            // Hitung status keseluruhan per siswa
-            foreach ($pendaftaran as $siswa) {
-                $tagihanAll = $siswa->tagihanLain;
-
-                if ($tagihanAll->isEmpty()) {
-                    $siswa->status_siswa = 'Belum Bayar';
-                } else {
-                    $allLunas = $tagihanAll->every(fn ($t) => strtolower($t->status) === 'lunas');
-                    $allBelumBayar = $tagihanAll->every(fn ($t) => strtolower($t->status) === 'belum_bayar');
-
-                    if ($allLunas) {
-                        $siswa->status_siswa = 'Lunas';
-                    } elseif ($allBelumBayar) {
-                        $siswa->status_siswa = 'Belum Bayar';
-                    } else {
-                        $siswa->status_siswa = 'Cicilan';
-                    }
-                }
-            }
-
-            // Hitung total pendaftar
-            $jumlahPendaftar = $pendaftaran->count();
-
-            // Hitung status tagihan per siswa
-            $statusSummary = [
-                'lunas' => $pendaftaran->where('status_siswa', 'Lunas')->count(),
-                'cicilan' => $pendaftaran->where('status_siswa', 'Cicilan')->count(),
-                'belum_bayar' => $pendaftaran->where('status_siswa', 'Belum Bayar')->count(),
-            ];
-
-            $data = [
-                'result' => $pendaftaran,
-                'jumlahPendaftar' => $jumlahPendaftar,
-                'jumlahLunas' => $statusSummary['lunas'],
-                'jumlahCicil' => $statusSummary['cicilan'],
-                'jumlahBelumBayar' => $statusSummary['belum_bayar'],
-                'tahun_login' => $tahun_login,
-            ];
-
-            return view('private.data.tagihan_lain.show', $data);
-
-        } else {
+        if (! $request->ajax()) {
             abort(403, 'Akses tidak diperbolehkan');
         }
+
+        // Ambil tahun login dari session
+        $tahun_login = session('tahun_login', date('Y'));
+
+        // Ambil semua pendaftaran siswa sesuai tahun login
+        $pendaftaran = PendaftaranModel::with([
+            'spp',
+            'tagihanLain' => fn ($q) => $q->where('tahun', $tahun_login)->with('detail'),
+        ])->where('tahun', $tahun_login)->get();
+
+        // Ambil semua ParBiaya sesuai tahun login
+        $parBiaya = ParBiayaModel::where('tahun', $tahun_login)->get()->keyBy('id_biaya');
+
+        // Hitung status siswa dan total bayar
+        $pendaftaran->transform(function ($siswa) use ($parBiaya) {
+            $totalTagihan = $parBiaya->sum(fn ($p) => (float) $p->nominal);
+
+            $totalBayar = $siswa->tagihanLain->sum(function ($tagihan) {
+                return $tagihan->detail->sum('nominal_bayar');
+            });
+
+            $siswa->status_siswa = match (true) {
+                $totalBayar == 0 => 'Belum Bayar',
+                $totalBayar < $totalTagihan => 'Cicilan',
+                default => 'Lunas',
+            };
+
+            $siswa->totalTagihan = $totalTagihan;
+            $siswa->totalBayar = $totalBayar;
+            $siswa->totalSisa = max(0, $totalTagihan - $totalBayar);
+
+            return $siswa;
+        });
+
+        // Summary status siswa
+        $statusSummary = [
+            'lunas' => $pendaftaran->where('status_siswa', 'Lunas')->count(),
+            'cicilan' => $pendaftaran->where('status_siswa', 'Cicilan')->count(),
+            'belum_bayar' => $pendaftaran->where('status_siswa', 'Belum Bayar')->count(),
+        ];
+
+        $data = [
+            'result' => $pendaftaran,
+            'jumlahPendaftar' => $pendaftaran->count(),
+            'jumlahLunas' => $statusSummary['lunas'],
+            'jumlahCicil' => $statusSummary['cicilan'],
+            'jumlahBelumBayar' => $statusSummary['belum_bayar'],
+            'tahun_login' => $tahun_login,
+        ];
+
+        return view('private.data.tagihan_lain.show', $data);
     }
 
     public function create($id_pendaftaran)
@@ -89,8 +93,11 @@ class TagihanLainController extends Controller
         $pendaftaran = PendaftaranModel::findOrFail($id_pendaftaran);
         $siswa = $pendaftaran;
 
-        // Ambil daftar parameter biaya
-        $parBiaya = ParBiayaModel::all();
+        // Ambil tahun login dari session
+        $tahun = session('tahun_login');
+
+        // Ambil daftar parameter biaya sesuai tahun login
+        $parBiaya = ParBiayaModel::where('tahun', $tahun)->get();
 
         foreach ($parBiaya as $item) {
             $tagihan = TagihanLainModel::where('id_pendaftaran', $id_pendaftaran)
@@ -114,7 +121,7 @@ class TagihanLainController extends Controller
                     $item->status = 'belum_bayar';
                 }
 
-                // Opsional: jika ingin kirim juga data riwayat cicilan ke view
+                // Opsional: kirim juga data riwayat cicilan ke view
                 $item->riwayat = $tagihan->detail;
             } else {
                 // Jika belum ada tagihan, set default
@@ -156,6 +163,14 @@ class TagihanLainController extends Controller
         try {
             $keterangan = $request->keterangan;
             $tglBayar = $request->tgl_bayar;
+            $tahun = date('Y', strtotime($tglBayar));
+            $totalKas = 0;
+
+            $siswa = PendaftaranModel::findOrFail($request->id_pendaftaran);
+            $namaBiayaBayar = [];
+
+            // --- Generate kode transaksi unik ---
+            $kodeTransaksi = 'TRX'.date('YmdHis').rand(100, 999);
 
             foreach ($request->tagihan as $idBiaya => $nominalInput) {
                 $nominal = (int) preg_replace('/\D/', '', (string) $nominalInput);
@@ -170,7 +185,6 @@ class TagihanLainController extends Controller
 
                 $fullAmount = (float) $parBiaya->nominal;
 
-                // Hitung total sudah bayar sebelumnya
                 $sudahBayar = TagihanLainDetailModel::whereHas('tagihan', function ($q) use ($request, $idBiaya) {
                     $q->where('id_pendaftaran', $request->id_pendaftaran)
                         ->where('id_biaya', $idBiaya);
@@ -178,7 +192,6 @@ class TagihanLainController extends Controller
 
                 $sisa = max(0, $fullAmount - $sudahBayar);
 
-                // Cek apakah input melebihi sisa
                 if ($nominal > $sisa) {
                     return response()->json([
                         'errors' => [
@@ -187,9 +200,8 @@ class TagihanLainController extends Controller
                     ], 422);
                 }
 
-                $totalBayar = $sudahBayar + $nominal;
-
-                $status = $totalBayar >= $fullAmount ? 'Lunas' : ($totalBayar > 0 ? 'Cicilan' : 'Belum Bayar');
+                $totalBayarBiaya = $sudahBayar + $nominal;
+                $statusBiaya = $totalBayarBiaya >= $fullAmount ? 'Lunas' : ($totalBayarBiaya > 0 ? 'Cicilan' : 'Belum Bayar');
 
                 $tagihan = TagihanLainModel::updateOrCreate(
                     [
@@ -197,24 +209,51 @@ class TagihanLainController extends Controller
                         'id_biaya' => $idBiaya,
                     ],
                     [
+                        'tahun' => $tahun,
                         'tagihan' => $fullAmount,
-                        'sisa_tagihan' => $fullAmount - $totalBayar,
-                        'status' => $status,
+                        'sisa_tagihan' => $fullAmount - $totalBayarBiaya,
+                        'status' => $statusBiaya,
                     ]
                 );
 
+                // --- Simpan detail pembayaran dengan kode transaksi ---
                 $tagihan->detail()->create([
                     'tgl_bayar' => $tglBayar,
                     'nominal_bayar' => $nominal,
                     'metode_bayar' => $request->metode_bayar,
                     'keterangan' => $keterangan,
+                    'kode_transaksi' => $kodeTransaksi, // <-- disini
+                ]);
+
+                $totalKas += $nominal;
+                $namaBiayaBayar[] = $parBiaya->nama_biaya;
+            }
+
+            // --- Update status tagihan siswa ---
+            $tagihanSiswa = TagihanLainModel::where('id_pendaftaran', $request->id_pendaftaran)->get();
+            foreach ($tagihanSiswa as $t) {
+                $t->update([
+                    'status' => $t->sisa_tagihan <= 0 ? 'Lunas' : ($t->sisa_tagihan < $t->tagihan ? 'Cicilan' : 'Belum Bayar'),
                 ]);
             }
+
+            // --- Simpan ke Kas ---
+            $keteranganKas = 'Pembayaran '.implode(', ', $namaBiayaBayar).' atas nama '.$siswa->nama_lengkap.' - '.$keterangan;
+
+            KasModel::create([
+                'id_pendaftaran' => $request->id_pendaftaran,
+                'tahun' => $tahun,
+                'tanggal' => $tglBayar,
+                'kd_kas' => 1,
+                'keterangan' => $keteranganKas,
+                'jumlah' => $totalKas,
+            ]);
 
             DB::commit();
 
             return response()->json([
-                'success' => 'Data Tagihan berhasil disimpan',
+                'success' => 'Data Tagihan & Kas berhasil disimpan',
+                'kode_transaksi' => $kodeTransaksi, // <-- kembalikan kode transaksi
                 'myReload' => 'tagihanlaindata',
             ]);
 
@@ -229,11 +268,35 @@ class TagihanLainController extends Controller
 
     public function show_detail($id_pendaftaran)
     {
-        $result = TagihanLainModel::with(['biaya', 'detail'])
-            ->where('id_pendaftaran', $id_pendaftaran)
-            ->get();
+        // Ambil tahun login dari session
+        $tahun = session('tahun_login');
 
-        return view('private.data.tagihan_lain.show_tagihan_detail', compact('result'));
+        // Ambil semua ParBiaya sesuai tahun login, termasuk yang belum dibayar
+        $parBiaya = ParBiayaModel::where('tahun', $tahun)->get();
+
+        $tagihan = TagihanLainModel::with('detail')
+            ->where('id_pendaftaran', $id_pendaftaran)
+            ->get()
+            ->keyBy('id_biaya'); // supaya mudah dicari
+
+        $totalTagihan = $parBiaya->sum(fn ($p) => (float) $p->nominal);
+        $totalBayar = 0;
+
+        foreach ($parBiaya as $p) {
+            if (isset($tagihan[$p->id_biaya])) {
+                $totalBayar += $tagihan[$p->id_biaya]->detail->sum('nominal_bayar');
+            }
+        }
+
+        $totalSisa = $totalTagihan - $totalBayar;
+
+        // Kirim semua variabel yang dibutuhkan ke view
+        return view('private.data.tagihan_lain.show_tagihan_detail', [
+            'result' => $tagihan,
+            'totalTagihan' => $totalTagihan,
+            'totalBayar' => $totalBayar,
+            'totalSisa' => $totalSisa,
+        ]);
     }
 
     public function destroy($id)
@@ -244,7 +307,8 @@ class TagihanLainController extends Controller
 
         DB::beginTransaction();
         try {
-            $detail = TagihanLainDetailModel::with('tagihan')->find($id);
+            // Ambil detail + tagihan + pendaftaran
+            $detail = TagihanLainDetailModel::with('tagihan.pendaftaran')->find($id);
 
             if (! $detail) {
                 return response()->json([
@@ -253,26 +317,68 @@ class TagihanLainController extends Controller
             }
 
             $tagihan = $detail->tagihan;
+            $siswa = $tagihan->pendaftaran;
+            $tglBayar = \Carbon\Carbon::parse($detail->tgl_bayar)->toDateString();
+            $tahun = \Carbon\Carbon::parse($detail->tgl_bayar)->year;
+
+            // Hapus detail pembayaran
             $detail->delete();
 
-            if ($tagihan) {
-                $totalBayar = $tagihan->detail()->sum('nominal_bayar');
-                $fullAmount = $tagihan->tagihan;
-                $sisa = max(0, $fullAmount - $totalBayar);
+            // Hitung ulang total pembayaran tagihan
+            $totalBayar = $tagihan->detail()->sum('nominal_bayar');
+            $fullAmount = $tagihan->tagihan;
+            $sisa = max(0, $fullAmount - $totalBayar);
 
-                $status = $totalBayar >= $fullAmount ? 'Lunas' :
-                        ($totalBayar > 0 ? 'Cicilan' : 'Belum Bayar');
+            $status = $totalBayar >= $fullAmount ? 'Lunas' :
+                      ($totalBayar > 0 ? 'Cicilan' : 'Belum Bayar');
 
-                $tagihan->update([
-                    'sisa_tagihan' => $sisa,
-                    'status' => $status,
-                ]);
+            $tagihan->update([
+                'sisa_tagihan' => $sisa,
+                'status' => $status,
+            ]);
+
+            /**
+             * --- 1. Update / hapus kas untuk tanggal pembayaran ini ---
+             */
+            $totalKasTanggal = TagihanLainDetailModel::whereHas('tagihan', function ($q) use ($tagihan) {
+                $q->where('id_pendaftaran', $tagihan->id_pendaftaran);
+            })
+                ->whereDate('tgl_bayar', $tglBayar)
+                ->sum('nominal_bayar');
+
+            $kas = KasModel::where('id_pendaftaran', $tagihan->id_pendaftaran)
+                ->whereDate('tanggal', $tglBayar)
+                ->where('tahun', $tahun)
+                ->where('kd_kas', 1)
+                ->first();
+
+            if ($kas) {
+                if ($totalKasTanggal > 0) {
+                    $kas->update(['jumlah' => $totalKasTanggal]);
+                } else {
+                    $kas->delete();
+                }
+            }
+
+            /**
+             * --- 2. Kalau semua detail siswa ini sudah kosong → hapus semua kas ---
+             */
+            $totalKasAll = TagihanLainDetailModel::whereHas('tagihan', function ($q) use ($tagihan) {
+                $q->where('id_pendaftaran', $tagihan->id_pendaftaran);
+            })
+                ->sum('nominal_bayar');
+
+            if ($totalKasAll === 0) {
+                KasModel::where('id_pendaftaran', $tagihan->id_pendaftaran)
+                    ->where('tahun', $tahun)
+                    ->where('kd_kas', 1)
+                    ->delete();
             }
 
             DB::commit();
 
             return response()->json([
-                'success' => 'Pembayaran berhasil dihapus dan tagihan diperbarui',
+                'success' => 'Pembayaran berhasil dihapus, tagihan & kas diperbarui',
                 'myReload' => 'tagihanlaindata',
             ]);
 
@@ -283,6 +389,73 @@ class TagihanLainController extends Controller
                 'error' => 'Terjadi kesalahan saat menghapus: '.$th->getMessage(),
             ], 500);
         }
+    }
+
+    // public function cetak_detail($kode_transaksi)
+    // {
+    //     // Ambil semua detail pembayaran dalam satu transaksi
+    //     $details = TagihanLainDetailModel::with('tagihan.biaya', 'tagihan.pendaftaran')
+    //         ->where('kode_transaksi', $kode_transaksi)
+    //         ->get();
+
+    //     if ($details->isEmpty()) {
+    //         abort(404, 'Transaksi tidak ditemukan.');
+    //     }
+
+    //     // Ambil siswa dari detail pertama
+    //     $siswa = $details->first()->tagihan->pendaftaran;
+
+    //     $data = [
+    //         'siswa' => $siswa,
+    //         'details' => $details,
+    //     ];
+
+    //     // Generate PDF
+    //     $pdf = Pdf::loadView('private.data.tagihan_lain.kwitansi_detail', $data)
+    //         ->setPaper('A5', 'landscape');
+
+    //     return $pdf->stream(
+    //         'Kwitansi_'.\Illuminate\Support\Str::slug($siswa->nama_lengkap, '_').'_'.$kode_transaksi.'.pdf'
+    //     );
+    // }
+
+    public function cetak_transaksi($kode_transaksi)
+    {
+        $details = TagihanLainDetailModel::with('tagihan.biaya', 'tagihan.pendaftaran')
+            ->where('kode_transaksi', $kode_transaksi)
+            ->get();
+
+        if ($details->isEmpty()) {
+            abort(404, 'Transaksi tidak ditemukan.');
+        }
+
+        $siswa = $details->first()->tagihan->pendaftaran;
+
+        $data = [
+            'siswa' => $siswa,
+            'details' => $details,
+        ];
+
+        $pdf = Pdf::loadView('private.data.tagihan_lain.kwitansi_transaksi', $data)
+            ->setPaper('A5', 'landscape');
+
+        return $pdf->stream('Kwitansi_'.$siswa->nama_lengkap.'_'.$kode_transaksi.'.pdf');
+    }
+
+    public function cetak_semua($id_pendaftaran)
+    {
+        $pendaftaran = PendaftaranModel::with(['tagihanLain.detail', 'siswa'])
+            ->findOrFail($id_pendaftaran);
+
+        $data = [
+            'siswa' => $pendaftaran,
+            'tagihanLain' => $pendaftaran->tagihanLain,
+        ];
+
+        $pdf = Pdf::loadView('private.data.tagihan_lain.kwitansi_semua', $data)
+            ->setPaper('A4', 'portrait');
+
+        return $pdf->stream('Kwitansi_All_'.$pendaftaran->nama_lengkap.'.pdf');
     }
 
     public function edit(TagihanLainModel $tagihanLainModel)

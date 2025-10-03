@@ -1,9 +1,4 @@
 <style>
-    /* Perbaikan garis tabel supaya tidak pecah saat zoom */
-    .dataTables_wrapper .dataTables_scrollBody table {
-        border-collapse: collapse !important;
-    }
-
     .card:hover {
         transform: translateY(-3px);
         transition: all 0.3s ease;
@@ -12,8 +7,9 @@
 </style>
 
 <div class="table-responsive">
-    <table id="tabel_tahun_ajaran" class="table table-bordered table-hover align-middle nowrap shadow-sm rounded w-100">
-        <thead class="text-white fw-bold" style="background: linear-gradient(90deg, #0d6efd, #3B82F6);">
+    <table id="tabel_tahun_ajaran" class="table table-bordered table-hover align-middle nowrap shadow-sm rounded"
+        style="width:100%">
+        <thead class="text-white fw-bold" style="background: linear-gradient(90deg, #0d6efd, #198754);">
             <tr>
                 <th class="text-center"><i class="bx bx-hash fs-5"></i></th>
                 <th><i class="bx bx-calendar-event fs-5 me-1"></i> Tahun Awal</th>
@@ -24,30 +20,34 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($result as $resultAll)
+            @foreach ($result as $row)
                 <tr>
                     <td class="text-center align-top">{{ $loop->iteration }}</td>
-                    <td class="text-center align-top">{{ $resultAll->tahun_awal }}</td>
-                    <td class="text-center align-top">{{ $resultAll->tahun_akhir }}</td>
-                    <td class="align-top fw-semibold">{{ $resultAll->nama_ta }}</td>
+                    <td class="text-center align-top">{{ $row->tahun_awal }}</td>
+                    <td class="text-center align-top">{{ $row->tahun_akhir }}</td>
+                    <td class="align-top fw-semibold">{{ $row->nama_ta }}</td>
                     <td class="text-center align-top">
-                        @if ($resultAll->status == 'aktif')
-                            <span class="badge bg-success"><i class="bx bx-check-circle me-1"></i> Aktif</span>
+                        @if ($row->status === 'aktif')
+                            <span class="badge bg-success">
+                                <i class="bx bx-check-circle me-1"></i> Aktif
+                            </span>
                         @else
-                            <span class="badge bg-secondary"><i class="bx bx-x-circle me-1"></i> Nonaktif</span>
+                            <span class="badge bg-secondary">
+                                <i class="bx bx-x-circle me-1"></i> Nonaktif
+                            </span>
                         @endif
                     </td>
                     <td class="text-center align-top">
                         <div class="btn-group" role="group">
-                            {{-- Edit --}}
+                            {{-- Tombol Edit --}}
                             <button class="btn btn-sm btn-primary" id="tombol-form-modal"
-                                data-url="{{ route('partahundata.edit', $resultAll->id_tahun) }}"
-                                data-bs-toggle="tooltip" title="Edit Data">
+                                data-url="{{ route('partahundata.edit', $row->id_tahun) }}" data-bs-toggle="tooltip"
+                                title="Edit Data">
                                 <i class="bx bx-edit-alt fs-5"></i>
                             </button>
 
-                            {{-- Delete --}}
-                            <form method="POST" action="{{ route('partahundata.destroy', $resultAll->id_tahun) }}"
+                            {{-- Tombol Hapus --}}
+                            <form method="POST" action="{{ route('partahundata.destroy', $row->id_tahun) }}"
                                 class="formDelete d-inline">
                                 @csrf
                                 @method('DELETE')
@@ -83,12 +83,12 @@
             }
         });
 
-        // Supaya garis tabel tetap rapi saat zoom atau resize
-        $(window).on('resize', function() {
-            table.columns.adjust();
-        });
+        // // Supaya tabel tetap rapi saat zoom/resize
+        // $(window).on('resize', function() {
+        //     table.columns.adjust();
+        // });
 
-        // Tooltip Bootstrap
+        // Aktifkan tooltip Bootstrap
         $('[data-bs-toggle="tooltip"]').tooltip();
     });
 </script>
