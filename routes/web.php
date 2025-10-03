@@ -76,8 +76,8 @@ Route::group(['middleware' => ['auth']], function () {
         Route::get('tagihan-lain/cetak-transaksi/{kode_transaksi}', [TagihanLainController::class, 'cetak_transaksi'])
             ->name('tagihanlaindata.cetak_transaksi');
 
-        Route::get('tagihan-lain/cetak-detail/{id_detail}', [TagihanLainController::class, 'cetak_detail'])
-            ->name('tagihanlaindata.cetak_detail');
+        // Route::get('tagihan-lain/cetak-detail/{id_detail}', [TagihanLainController::class, 'cetak_detail'])
+        //     ->name('tagihanlaindata.cetak_detail');
 
         Route::get('tagihan-lain/cetak-semua/{id_pendaftaran}', [TagihanLainController::class, 'cetak_semua'])
             ->name('tagihanlaindata.cetak_semua');
@@ -100,6 +100,9 @@ Route::group(['middleware' => ['auth']], function () {
         Route::resource('pindahkelasdata', PindahKelasController::class);
 
         // Penamoung siswa yang lulus, keluar, dan pindah
+        Route::post('penampungdata/ubahStatusAktif', [PenampungController::class, 'ubahStatusAktif'])
+            ->name('penampungdata.ubahStatusAktif');
+
         Route::resource('penampungdata', PenampungController::class);
     });
 

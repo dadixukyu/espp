@@ -36,7 +36,7 @@
                             <label class="form-label fw-bold">Pilih Status</label>
                             <select name="kelas" id="selectPenampung" class="form-select">
                                 <option value="">-- Pilih Status --</option>
-                                <option value="aktif">Aktif</option>
+                                {{-- <option value="aktif">Aktif</option> --}}
                                 <option value="lulus">Lulus</option>
                                 <option value="pindah">Pindah</option>
                                 <option value="keluar">Keluar</option>
@@ -67,6 +67,7 @@
     </div>
 
     <script src="{{ asset('assets/js/jquery.min.js') }}"></script>
+    <script src="{{ asset('assets/plugins/datatable/js/dataTables.bootstrap5.min.js') }}"></script>
     <script>
         function myReloadTable() {
             let kelas = $('#selectPenampung').val();

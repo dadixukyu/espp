@@ -119,6 +119,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 myReloadTable1();
               }
 
+              else if (response.myReload == 'penampungdata') {
+                myReloadTable1();
+              }
+
             } else if (response.error) {
               Swal.fire('Gagal', response.error, 'warning');
               // Lobibox.notify('error', {

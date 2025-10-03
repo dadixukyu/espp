@@ -101,14 +101,18 @@
                                 title="Lengkapi Data Siswa">
                                 <i class="bx bx-edit-alt fs-5"></i>
                             </button>
-                            <form method="POST" action="{{ route('siswadata.destroy', $resultAll->id_siswa) }}"
-                                class="formDelete" style="display:inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" data-bs-toggle="tooltip">
-                                    <i class="bx bx-trash-alt fs-5"></i>
-                                </button>
-                            </form>
+                            @if (Auth::check() && Auth::user()->level == 1)
+                                <form method="POST" action="{{ route('siswadata.destroy', $resultAll->id_siswa) }}"
+                                    class="formDelete" style="display:inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger" data-bs-toggle="tooltip"
+                                        title="Hapus Siswa">
+                                        <i class="bx bx-trash-alt fs-5"></i>
+                                    </button>
+                                </form>
+                            @endif
+
                         </div>
                     </td>
                     {{-- Status siswa --}}

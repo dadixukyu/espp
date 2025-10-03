@@ -62,4 +62,9 @@ class SiswaModel extends Model
 
         return $query->get();
     }
+
+    public function tagihanSpp()
+    {
+        return $this->hasMany(TagihanSPPModel::class, 'id_siswa', 'id_siswa');
+    }
 }

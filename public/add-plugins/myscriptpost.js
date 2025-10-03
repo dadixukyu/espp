@@ -126,6 +126,7 @@ $(document).ready(function () {
             beforeSend: function () {
                 $('#tombolSave').prop('disabled', true);
                 $('#tombolSave').html("<i class='mr-25 spinner-border spinner-border-sm'></i>");
+
             },
             complete: function () {
                 $('#tombolSave').prop('disabled', false);
@@ -199,6 +200,15 @@ $(document).ready(function () {
                         myReloadTable();
                     }
 
+                    if (response.myReload == 'penampungdata') {
+                        $('#modalFormData').modal('hide');
+                        myReloadTable();
+                    }
+
+                    if (response.myReload == 'penampungdata') {
+                        $('#modalFormData').modal('hide');
+                        myReloadTable1();
+                    }
 
 
                 }

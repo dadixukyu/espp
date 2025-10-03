@@ -32,14 +32,14 @@ class SiswaController extends Controller
         if ($r->ajax()) {
             $result = SiswaModel::with('spp')
                 ->where('kd_data', 1)
+                ->where('status_siswa', 'aktif') // hanya siswa aktif
                 ->get();
 
             // Total siswa aktif
-            $totalSiswaAktif = $result->where('status_siswa', 'aktif')->count();
+            $totalSiswaAktif = $result->count();
 
             // Jumlah siswa per kelas X, XI, XII
-            $jumlahSiswaPerKelas = $result->where('status_siswa', 'aktif')
-                ->groupBy('kelas')
+            $jumlahSiswaPerKelas = $result->groupBy('kelas')
                 ->map(function ($kelas) {
                     return $kelas->count();
                 });
@@ -338,20 +338,39 @@ class SiswaController extends Controller
 
     public function destroy($id)
     {
-        if (request()->ajax()) {
-
-            // $post = SiswaModel::where('id_siswa', $id)->delete();
-            $post = SiswaModel::findOrFail($id);
-            $post->update(['kd_data' => null]); // hanya set null, data tetap ada
-
-            if ($post) {
-                return response()->json([
-                    'success' => 'Data Siswa berhasil dihapus',
-                    'myReload' => 'siswadata',
-                ]);
-            }
-        } else {
-            exit('Maaf Tidak Dapat diproses...');
+        // Pastikan request AJAX
+        if (! request()->ajax()) {
+            return response()->json(['error' => 'Maaf Tidak Dapat diproses...'], 403);
         }
+
+        // Ambil siswa
+        $siswa = SiswaModel::findOrFail($id);
+
+        // if ($pendaftaran->tagihanLain()->count() > 0) {
+        //             return response()->json([
+        //                 'error' => 'Data Pendaftaran tidak bisa dihapus karena sudah ada Tagihan Lain terkait.',
+        //             ]);
+        //         }
+        // Cek transaksi SPP
+        if ($siswa->tagihanSpp()->exists()) {
+            return response()->json([
+                'error' => 'Siswa tidak bisa dihapus karena sudah ada transaksi SPP.',
+            ]);
+        }
+
+        // Cek transaksi Tagihan Lain
+        // if ($siswa->tagihanLain()->exists()) {
+        //     return response()->json([
+        //         'error' => 'Siswa tidak bisa dihapus karena sudah ada transaksi Tagihan Lain',
+        //     ], 422);
+        // }
+
+        // Kalau aman, update kd_data jadi null
+        $siswa->update(['kd_data' => null]);
+
+        return response()->json([
+            'success' => 'Data Siswa berhasil dihapus',
+            'myReload' => 'siswadata',
+        ]);
     }
 }

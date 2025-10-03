@@ -45,7 +45,8 @@
                                 <option value="">-- Semua Bulan --</option>
                                 @for ($i = 1; $i <= 12; $i++)
                                     <option value="{{ $i }}">
-                                        {{ \Carbon\Carbon::create(null, $i)->translatedFormat('F') }}</option>
+                                        {{ \Carbon\Carbon::create(null, $i)->locale('id')->translatedFormat('F') }}
+                                    </option>
                                 @endfor
                             </select>
                         </div>
